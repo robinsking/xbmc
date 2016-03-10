@@ -110,7 +110,7 @@
       <group id="2">
         <setting id="lookandfeel.enablerssfeeds" type="boolean" label="13305" help="36111">
           <level>0</level>
-          <default>true</default>
+          <default>false</default>
           <control type="toggle" />
         </setting>
         <setting id="lookandfeel.rssedit" type="string" parent="lookandfeel.enablerssfeeds" label="21450" help="36112">
@@ -2054,7 +2054,7 @@
       <group id="1">
         <setting id="services.devicename" type="string" label="1271" help="36321">
           <level>0</level>
-          <default>Kodi</default>
+          <default>QLOVE</default>
           <control type="edit" format="string" />
         </setting>
       </group>
@@ -2093,7 +2093,7 @@
         </setting>
         <setting id="services.upnprenderer" type="boolean" label="21881" help="36325">
           <level>1</level>
-          <default>false</default>
+          <default>true</default>
           <control type="toggle" />
         </setting>
       </group>
@@ -2266,7 +2266,7 @@
       <group id="1">
         <setting id="services.airplay" type="boolean" label="1270" help="36343">
           <level>1</level>
-          <default>false</default>
+          <default>true</default>
           <control type="toggle" />
         </setting>
         <setting id="services.airplayvolumecontrol" type="boolean" parent="services.airplay" label="1269" help="36541">
@@ -2300,7 +2300,7 @@
         </setting>
         <setting id="services.airplayvideosupport" type="boolean" parent="services.airplay" label="1268" help="36549">
           <level>3</level>
-          <default>true</default>
+          <default>false</default>
           <dependencies>
             <dependency type="enable" setting="services.airplay">true</dependency>
           </dependencies>

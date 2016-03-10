@@ -79,6 +79,98 @@ extern void android_main(struct android_app* state)
   exit(0);
 }
 
+#include "android/jni/ContextApp.h"
+#include "android/jni/System.h"
+#include "android/jni/ApplicationInfo.h"
+#include "android/jni/File.h"
+#include <android/log.h>
+
+static pthread_t s_thread;
+static CJNIContextApp s_context;
+static JavaVM* s_vm;
+static JNIEnv* s_env;
+static ANativeActivity s_activity;
+
+static void* thread_run(void *arg);
+
+void startXbmc(JNIEnv *env, jobject context)
+{
+  s_env = env;
+  s_context.setContext(context, s_vm, s_env);
+  s_activity.env = s_env;
+  s_activity.vm = s_vm;
+  s_activity.clazz = env->NewGlobalRef(context);
+  s_activity.sdkVersion= 21;
+  CXBMCApp xbmcApp(&s_activity);
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  pthread_create(&s_thread, &attr, thread_run, env);
+  pthread_attr_destroy(&attr);
+}
+
+static void* thread_run(void *arg)
+{
+  JNIEnv *env = (JNIEnv *)arg;
+  s_context.setEnv(s_vm, s_env);
+  setenv("XBMC_ANDROID_SYSTEM_LIBS", CJNISystem::getProperty("java.library.path").c_str(), 0);
+  setenv("XBMC_ANDROID_LIBS", s_context.getApplicationInfo().nativeLibraryDir.c_str(), 0);
+  setenv("XBMC_ANDROID_APK", s_context.getPackageResourcePath().c_str(), 0);
+
+  std::string appName = CCompileInfo::GetAppName();
+  StringUtils::ToLower(appName);
+  std::string className = "org.xbmc." + appName;
+
+  std::string xbmcHome = CJNISystem::getProperty("xbmc.home", "");
+  if (xbmcHome.empty())
+  {
+    std::string cacheDir = s_context.getCacheDir().getAbsolutePath();
+    setenv("KODI_BIN_HOME", (cacheDir + "/apk/assets").c_str(), 0);
+    setenv("KODI_HOME", (cacheDir + "/apk/assets").c_str(), 0);
+  }
+  else
+  {
+    setenv("KODI_BIN_HOME", (xbmcHome + "/assets").c_str(), 0);
+    setenv("KODI_HOME", (xbmcHome + "/assets").c_str(), 0);
+  }
+
+  std::string externalDir = CJNISystem::getProperty("xbmc.data", "");
+  if (externalDir.empty())
+  {
+    CJNIFile androidPath = s_context.getExternalFilesDir("");
+    if (!androidPath)
+      androidPath = s_context.getDir(className.c_str(), 1);
+
+    if (androidPath)
+      externalDir = androidPath.getAbsolutePath();
+  }
+
+  if (!externalDir.empty())
+    setenv("HOME", externalDir.c_str(), 0);
+  else
+    setenv("HOME", getenv("KODI_TEMP"), 0);
+
+  std::string apkPath = getenv("XBMC_ANDROID_APK");
+  apkPath += "/assets/python2.6";
+  setenv("PYTHONHOME", apkPath.c_str(), 1);
+  setenv("PYTHONPATH", "", 1);
+  setenv("PYTHONOPTIMIZE","", 1);
+  setenv("PYTHONNOUSERSITE", "1", 1);
+
+  CXBMCApp::android_printf(" => running XBMC_Run...");
+  try
+  {
+    int status = XBMC_Run(false);
+    CXBMCApp::android_printf(" => XBMC_Run finished with %d", status);
+  }
+  catch(...)
+  {
+    CXBMCApp::android_printf("ERROR: Exception caught on main loop. Exiting");
+  }
+  return NULL;
+}
+
+
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
   jint version = JNI_VERSION_1_6;
@@ -86,6 +178,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
   if (vm->GetEnv(reinterpret_cast<void**>(&env), version) != JNI_OK)
     return -1;
 
+  s_vm = vm;
   std::string appName = CCompileInfo::GetAppName();
   StringUtils::ToLower(appName);
   std::string mainClass = "org/xbmc/" + appName + "/Main";
@@ -93,6 +186,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
   std::string frameListener = "org/xbmc/" + appName + "/XBMCOnFrameAvailableListener";
   std::string settingsObserver = "org/xbmc/" + appName + "/XBMCSettingsContentObserver";
   std::string audioFocusChangeListener = "org/xbmc/" + appName + "/XBMCOnAudioFocusChangeListener";
+  std::string kodiApp = "org/xbmc/" + appName + "/KodiApp";
 
   jclass cMain = env->FindClass(mainClass.c_str());
   if(cMain)
@@ -154,6 +248,17 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
       (void*)&CJNIMainActivity::_onAudioFocusChange
     };
     env->RegisterNatives(cAudioFocusChangeListener, &mOnAudioFocusChange, 1);
+  }
+
+  jclass cKodiApp = env->FindClass(kodiApp.c_str());
+  if(cKodiApp)
+  {
+    JNINativeMethod mStartXbmc = {
+      "_startXbmc",
+      "()V",
+      (void*)&startXbmc
+    };
+    env->RegisterNatives(cKodiApp, &mStartXbmc, 1);
   }
 
   return version;

@@ -82,6 +82,7 @@
 #include "CompileInfo.h"
 
 #define GIGABYTES       1073741824
+#define NO_UI           1
 
 using namespace std;
 using namespace KODI::MESSAGING;
@@ -372,7 +373,9 @@ bool CXBMCApp::IsHeadsetPlugged()
 
 void CXBMCApp::run()
 {
+#if 0
   int status = 0;
+#endif
 
   SetupEnv();
   XBMC::Context context;
@@ -398,6 +401,7 @@ void CXBMCApp::run()
   }
 
   m_firstrun=false;
+#if 0
   android_printf(" => running XBMC_Run...");
   try
   {
@@ -408,7 +412,7 @@ void CXBMCApp::run()
   {
     android_printf("ERROR: Exception caught on main loop. Exiting");
   }
-
+#endif
   // If we are have not been force by Android to exit, notify its finish routine.
   // This will cause android to run through its teardown events, it calls:
   // onPause(), onLostFocus(), onDestroyWindow(), onStop(), onDestroy().
@@ -815,6 +819,7 @@ void CXBMCApp::onAudioFocusChange(int focusChange)
 
 void CXBMCApp::SetupEnv()
 {
+#if 0
   setenv("XBMC_ANDROID_SYSTEM_LIBS", CJNISystem::getProperty("java.library.path").c_str(), 0);
   setenv("XBMC_ANDROID_LIBS", getApplicationInfo().nativeLibraryDir.c_str(), 0);
   setenv("XBMC_ANDROID_APK", getPackageResourcePath().c_str(), 0);
@@ -858,6 +863,7 @@ void CXBMCApp::SetupEnv()
   setenv("PYTHONPATH", "", 1);
   setenv("PYTHONOPTIMIZE","", 1);
   setenv("PYTHONNOUSERSITE", "1", 1);
+#endif
 }
 
 std::string CXBMCApp::GetFilenameFromIntent(const CJNIIntent &intent)
