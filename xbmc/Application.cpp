@@ -3670,6 +3670,11 @@ void CApplication::OnPlayBackStarted()
 
   CGUIMessage msg(GUI_MSG_PLAYBACK_STARTED, 0, 0);
   g_windowManager.SendThreadMessage(msg);
+
+  CVariant param;
+  param["player"]["speed"] = 1;
+  param["player"]["playerid"] = g_playlistPlayer.GetCurrentPlaylist();
+  CAnnouncementManager::GetInstance().Announce(Player, "xbmc", "OnPlay", m_itemCurrentFile, param);
 }
 
 void CApplication::OnQueueNextItem()
@@ -3684,8 +3689,19 @@ void CApplication::OnQueueNextItem()
   g_pythonParser.OnQueueNextItem(); // currently unimplemented
 #endif
 
-  CGUIMessage msg(GUI_MSG_QUEUE_NEXT_ITEM, 0, 0);
-  g_windowManager.SendThreadMessage(msg);
+  // Check to see if our playlist player has a new item for us,
+  // and if so, we check whether our current player wants the file
+  int iNext = g_playlistPlayer.GetNextSong();
+  CPlayList& playlist = g_playlistPlayer.GetPlaylist(g_playlistPlayer.GetCurrentPlaylist());
+  if (iNext < 0 || iNext >= playlist.size())
+  {
+    m_pPlayer->OnNothingToQueueNotify();
+  }
+  else
+  {
+    CGUIMessage msg(GUI_MSG_QUEUE_NEXT_ITEM, 0, 0);
+    g_windowManager.SendThreadMessage(msg);
+  }
 }
 
 void CApplication::OnPlayBackStopped()
@@ -4257,11 +4273,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
       }
       g_infoManager.SetCurrentItem(*m_itemCurrentFile);
       g_partyModeManager.OnSongChange(true);
-
-      CVariant param;
-      param["player"]["speed"] = 1;
-      param["player"]["playerid"] = g_playlistPlayer.GetCurrentPlaylist();
-      CAnnouncementManager::GetInstance().Announce(Player, "xbmc", "OnPlay", m_itemCurrentFile, param);
       return true;
     }
     break;
@@ -4275,7 +4286,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
       if (iNext < 0 || iNext >= playlist.size())
       {
         m_pPlayer->OnNothingToQueueNotify();
-        return true; // nothing to do
+        return true;
       }
 
       // ok, grab the next song

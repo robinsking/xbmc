@@ -476,7 +476,6 @@ void CXBMCApp::SetRefreshRate(float rate)
 {
   if (rate < 1.0)
     return;
-
   CVariant *variant = new CVariant(rate);
   runNativeOnUiThread(SetRefreshRateCallback, variant);
 }
