@@ -90,8 +90,15 @@ static CJNIContextApp s_context;
 static JavaVM* s_vm;
 static JNIEnv* s_env;
 static ANativeActivity s_activity;
+static CXBMCApp* s_xbmcApp;
 
 static void* thread_run(void *arg);
+
+void restartNetworkService(JNIEnv *env, jobject context)
+{
+  CXBMCApp::android_printf(" => restartNetworkService");
+  CXBMCApp::restartNetworkService();
+}
 
 void startXbmc(JNIEnv *env, jobject context)
 {
@@ -101,7 +108,7 @@ void startXbmc(JNIEnv *env, jobject context)
   s_activity.vm = s_vm;
   s_activity.clazz = env->NewGlobalRef(context);
   s_activity.sdkVersion= 21;
-  CXBMCApp xbmcApp(&s_activity);
+  s_xbmcApp = new CXBMCApp(&s_activity);
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -111,7 +118,6 @@ void startXbmc(JNIEnv *env, jobject context)
 
 static void* thread_run(void *arg)
 {
-  JNIEnv *env = (JNIEnv *)arg;
   s_context.setEnv(s_vm, s_env);
   setenv("XBMC_ANDROID_SYSTEM_LIBS", CJNISystem::getProperty("java.library.path").c_str(), 0);
   setenv("XBMC_ANDROID_LIBS", s_context.getApplicationInfo().nativeLibraryDir.c_str(), 0);
@@ -259,6 +265,13 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
       (void*)&startXbmc
     };
     env->RegisterNatives(cKodiApp, &mStartXbmc, 1);
+
+    JNINativeMethod mRestartNetworkService = {
+      "_restartNetworkService",
+      "()V",
+      (void*)&restartNetworkService
+    };
+    env->RegisterNatives(cKodiApp, &mRestartNetworkService, 1);
   }
 
   return version;

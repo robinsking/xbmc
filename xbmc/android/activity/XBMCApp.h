@@ -84,7 +84,7 @@ public:
   void onDestroyWindow();
   void onGainFocus();
   void onLostFocus();
-
+  static void restartNetworkService();
 
   static const ANativeWindow** GetNativeWindow(int timeout);
   static int SetBuffersGeometry(int width, int height, int format);

@@ -80,6 +80,7 @@
 #include "AndroidKey.h"
 
 #include "CompileInfo.h"
+#include "network/Network.h"
 
 #define GIGABYTES       1073741824
 #define NO_UI           1
@@ -126,6 +127,17 @@ CXBMCApp::~CXBMCApp()
 {
   m_xbmcappinstance = NULL;
   delete m_wakeLock;
+}
+
+void CXBMCApp::restartNetworkService()
+{
+  if (!m_xbmcappinstance)
+  {
+    android_printf("CXBMCApp: restartNetworkService, NOT initialized!");
+    return;
+  }
+  CApplicationMessenger::GetInstance().PostMsg(TMSG_NETWORKMESSAGE, CNetwork::SERVICES_DOWN, 1);
+  CApplicationMessenger::GetInstance().PostMsg(TMSG_NETWORKMESSAGE, CNetwork::SERVICES_UP, 1);
 }
 
 void CXBMCApp::onStart()
