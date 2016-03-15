@@ -28,6 +28,7 @@
 #include "CompileInfo.h"
 
 #include "android/activity/JNIMainActivity.h"
+#include "messaging/ApplicationMessenger.h"
 
 // copied from new android_native_app_glue.c
 static void process_input(struct android_app* app, struct android_poll_source* source) {
@@ -94,10 +95,40 @@ static CXBMCApp* s_xbmcApp;
 
 static void* thread_run(void *arg);
 
-void restartNetworkService(JNIEnv *env, jobject context)
+void stopNetworkService(JNIEnv *env, jobject context)
 {
-  CXBMCApp::android_printf(" => restartNetworkService");
-  CXBMCApp::restartNetworkService();
+  CXBMCApp::android_printf(" => stopNetworkService");
+  if (!s_xbmcApp)
+  {
+    CXBMCApp::android_printf(" => stopNetworkService fail, it is NOT started yet");
+    return;
+  }
+  //CXBMCApp::stopNetworkService();
+  KODI::MESSAGING::CApplicationMessenger::GetInstance().PostMsg(TMSG_QUIT);
+  pthread_join(s_thread, NULL);
+  CXBMCApp::android_printf(" => XBMC finished");
+  delete(s_xbmcApp);
+  s_xbmcApp = NULL;
+}
+
+void startXbmcInternal(int bSetupEnv) {
+  if (s_xbmcApp)
+  {
+    CXBMCApp::android_printf(" => startXbmcInternal fail, it already started");
+    return;
+  }
+  s_xbmcApp = new CXBMCApp(&s_activity);
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  pthread_create(&s_thread, &attr, thread_run, (bSetupEnv != 0 ? s_env : NULL));
+  pthread_attr_destroy(&attr);
+}
+
+void startNetworkService(JNIEnv *env, jobject context)
+{
+  CXBMCApp::android_printf(" => startNetworkService");
+  startXbmcInternal(1);
 }
 
 void startXbmc(JNIEnv *env, jobject context)
@@ -108,60 +139,64 @@ void startXbmc(JNIEnv *env, jobject context)
   s_activity.vm = s_vm;
   s_activity.clazz = env->NewGlobalRef(context);
   s_activity.sdkVersion= 21;
-  s_xbmcApp = new CXBMCApp(&s_activity);
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-  pthread_create(&s_thread, &attr, thread_run, env);
-  pthread_attr_destroy(&attr);
+  startXbmcInternal(1);
 }
 
+void setupEnv()
+{    
+    setenv("XBMC_ANDROID_SYSTEM_LIBS", CJNISystem::getProperty("java.library.path").c_str(), 0);
+    setenv("XBMC_ANDROID_LIBS", s_context.getApplicationInfo().nativeLibraryDir.c_str(), 0);
+    setenv("XBMC_ANDROID_APK", s_context.getPackageResourcePath().c_str(), 0);
+
+    std::string appName = CCompileInfo::GetAppName();
+    StringUtils::ToLower(appName);
+    std::string className = "org.xbmc." + appName;
+
+    std::string xbmcHome = CJNISystem::getProperty("xbmc.home", "");
+    if (xbmcHome.empty())
+    {
+      std::string cacheDir = s_context.getCacheDir().getAbsolutePath();
+      setenv("KODI_BIN_HOME", (cacheDir + "/apk/assets").c_str(), 0);
+      setenv("KODI_HOME", (cacheDir + "/apk/assets").c_str(), 0);
+    }
+    else
+    {
+      setenv("KODI_BIN_HOME", (xbmcHome + "/assets").c_str(), 0);
+      setenv("KODI_HOME", (xbmcHome + "/assets").c_str(), 0);
+    }
+
+    std::string externalDir = CJNISystem::getProperty("xbmc.data", "");
+    if (externalDir.empty())
+    {
+      CJNIFile androidPath = s_context.getExternalFilesDir("");
+      if (!androidPath)
+        androidPath = s_context.getDir(className.c_str(), 1);
+
+      if (androidPath)
+        externalDir = androidPath.getAbsolutePath();
+    }
+
+    if (!externalDir.empty())
+      setenv("HOME", externalDir.c_str(), 0);
+    else
+      setenv("HOME", getenv("KODI_TEMP"), 0);
+
+    std::string apkPath = getenv("XBMC_ANDROID_APK");
+    apkPath += "/assets/python2.6";
+    setenv("PYTHONHOME", apkPath.c_str(), 1);
+    setenv("PYTHONPATH", "", 1);
+    setenv("PYTHONOPTIMIZE","", 1);
+    setenv("PYTHONNOUSERSITE", "1", 1);
+
+}
 static void* thread_run(void *arg)
 {
   s_context.setEnv(s_vm, s_env);
-  setenv("XBMC_ANDROID_SYSTEM_LIBS", CJNISystem::getProperty("java.library.path").c_str(), 0);
-  setenv("XBMC_ANDROID_LIBS", s_context.getApplicationInfo().nativeLibraryDir.c_str(), 0);
-  setenv("XBMC_ANDROID_APK", s_context.getPackageResourcePath().c_str(), 0);
 
-  std::string appName = CCompileInfo::GetAppName();
-  StringUtils::ToLower(appName);
-  std::string className = "org.xbmc." + appName;
-
-  std::string xbmcHome = CJNISystem::getProperty("xbmc.home", "");
-  if (xbmcHome.empty())
+  if (arg != NULL)
   {
-    std::string cacheDir = s_context.getCacheDir().getAbsolutePath();
-    setenv("KODI_BIN_HOME", (cacheDir + "/apk/assets").c_str(), 0);
-    setenv("KODI_HOME", (cacheDir + "/apk/assets").c_str(), 0);
+    setupEnv();
   }
-  else
-  {
-    setenv("KODI_BIN_HOME", (xbmcHome + "/assets").c_str(), 0);
-    setenv("KODI_HOME", (xbmcHome + "/assets").c_str(), 0);
-  }
-
-  std::string externalDir = CJNISystem::getProperty("xbmc.data", "");
-  if (externalDir.empty())
-  {
-    CJNIFile androidPath = s_context.getExternalFilesDir("");
-    if (!androidPath)
-      androidPath = s_context.getDir(className.c_str(), 1);
-
-    if (androidPath)
-      externalDir = androidPath.getAbsolutePath();
-  }
-
-  if (!externalDir.empty())
-    setenv("HOME", externalDir.c_str(), 0);
-  else
-    setenv("HOME", getenv("KODI_TEMP"), 0);
-
-  std::string apkPath = getenv("XBMC_ANDROID_APK");
-  apkPath += "/assets/python2.6";
-  setenv("PYTHONHOME", apkPath.c_str(), 1);
-  setenv("PYTHONPATH", "", 1);
-  setenv("PYTHONOPTIMIZE","", 1);
-  setenv("PYTHONNOUSERSITE", "1", 1);
 
   CXBMCApp::android_printf(" => running XBMC_Run...");
   try
@@ -266,12 +301,19 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
     };
     env->RegisterNatives(cKodiApp, &mStartXbmc, 1);
 
-    JNINativeMethod mRestartNetworkService = {
-      "_restartNetworkService",
+    JNINativeMethod mStartNetworkService = {
+      "_startNetworkService",
       "()V",
-      (void*)&restartNetworkService
+      (void*)&startNetworkService
     };
-    env->RegisterNatives(cKodiApp, &mRestartNetworkService, 1);
+    env->RegisterNatives(cKodiApp, &mStartNetworkService, 1);
+
+    JNINativeMethod mStopNetworkService = {
+      "_stopNetworkService",
+      "()V",
+      (void*)&stopNetworkService
+    };
+    env->RegisterNatives(cKodiApp, &mStopNetworkService, 1);
   }
 
   return version;

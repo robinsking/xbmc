@@ -436,6 +436,16 @@ bool CApplication::SetupNetwork()
 
 bool CApplication::Create()
 {
+  try
+  {
+    CJobManager::GetInstance().Restart();
+  }
+  catch (...)
+  {
+    CLog::Log(LOGDEBUG, "It's OK to fail to restart JobManager");
+  }
+
+  m_bStop = false;
   SetupNetwork();
   Preflight();
 
@@ -487,6 +497,7 @@ bool CApplication::Create()
     StringUtils::ToLower(lcAppName);
     fprintf(stderr,"Could not init logging classes. Permission errors on ~/.%s (%s)\n", lcAppName.c_str(),
       CSpecialProtocol::TranslatePath(g_advancedSettings.m_logFolder).c_str());
+    CXBMCApp::android_printf("Application.cpp, ERROR: Could not init logging classes.");
     return false;
   }
 
@@ -907,6 +918,8 @@ bool CApplication::InitDirectoriesLinux()
   /* Set some environment variables */
   setenv(envAppBinHome, appBinPath.c_str(), 0);
   setenv(envAppHome, appPath.c_str(), 0);
+  
+  CXBMCApp::android_printf("Applicatoin.cpp, InitDirectoriesLinux. m_bPlatformDirectories = %d", (int)m_bPlatformDirectories);
 
   if (m_bPlatformDirectories)
   {
@@ -3043,12 +3056,17 @@ void CApplication::Stop(int exitCode)
   {
     CLog::Log(LOGERROR, "Exception in CApplication::Stop()");
   }
+  CSettings::GetInstance().Unload();
+  CSettings::GetInstance().Uninitialize();
+
+  CKeyboardLayoutManager::GetInstance().Unload();
 
   // we may not get to finish the run cycle but exit immediately after a call to g_application.Stop()
   // so we may never get to Destroy() in CXBApplicationEx::Run(), we call it here.
   Destroy();
   cleanup_emu_environ();
 
+  CLog::Close();
   Sleep(200);
 }
 

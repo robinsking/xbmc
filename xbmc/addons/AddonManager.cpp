@@ -363,6 +363,11 @@ bool CAddonMgr::Init()
 
 void CAddonMgr::DeInit()
 {
+  if (m_cpluff && m_cpluff->IsLoaded() && m_cp_context)
+  {
+    m_cpluff->destroy_context(m_cp_context);
+  }
+  m_cp_context = NULL;
   if (m_cpluff && m_cpluff->IsLoaded())
     m_cpluff->destroy();
   delete m_cpluff;

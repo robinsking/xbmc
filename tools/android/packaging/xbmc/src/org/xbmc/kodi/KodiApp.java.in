@@ -90,6 +90,7 @@ public class KodiApp extends Application {
   private boolean mInstallLibs = false;
 
   private boolean mXbmcStarted = false;
+  private boolean mNetworkStarted = false;
   private boolean mWiFiActive = false;
   private Object mXbmcLock = new Object();
 
@@ -641,22 +642,19 @@ public class KodiApp extends Application {
       unregisterReceiver(mExternalStorageReceiver);
   }
 
-  private static final int MSG_CHECK_WIFI_STATUS = 1;
-  private static final int WIFI_ACTIVE_MSG_DELAY = 1 * 1000;
+  private static final int MSG_STOP_NETWORK_SERVICE = 1;
+  private static final int MSG_START_NETWORK_SERVICE = 2;
+  private static final int WIFI_ACTIVE_MSG_DELAY = 5 * 1000;
 
   private Handler mHandler = new Handler() {
     public void handleMessage(Message msg) {
       switch (msg.what) {
-        case MSG_CHECK_WIFI_STATUS: {
-          boolean wifiActive = (msg.arg1 != 0);
-          synchronized(mXbmcLock) {
-            if (mWiFiActive != wifiActive && wifiActive) {
-              Log.d(TAG, "WiFi changed to ACTIVE, restart network servicve");
-              _restartNetworkService();
-            }
-          }
+        case MSG_STOP_NETWORK_SERVICE:
+          _stopNetworkService();
           break;
-        }
+        case MSG_START_NETWORK_SERVICE:
+          _startNetworkService();
+          break;
       }
     }
   };
@@ -678,6 +676,7 @@ public class KodiApp extends Application {
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkStateReceiver, filter);
         mWiFiActive = isWiFiActive();
+        mNetworkStarted = true;
         Log.d(TAG, "mWiFiActive = " + mWiFiActive);
         _startXbmc();
       }
@@ -689,9 +688,17 @@ public class KodiApp extends Application {
     public void onReceive(Context context, Intent intent) {
       boolean wifiActive = isWiFiActive();
       Log.d(TAG, "Network Changes, wifiActive = " + wifiActive);
-      if (wifiActive) {
-        mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_CHECK_WIFI_STATUS, 1, 0),
-            WIFI_ACTIVE_MSG_DELAY);
+      synchronized (mXbmcLock) {
+        if (mWiFiActive != wifiActive) {
+          mWiFiActive = wifiActive;
+          if (wifiActive) {
+            mHandler.removeMessages(MSG_STOP_NETWORK_SERVICE);
+            mHandler.removeMessages(MSG_START_NETWORK_SERVICE);
+
+            mHandler.sendEmptyMessage(MSG_STOP_NETWORK_SERVICE);
+            mHandler.sendEmptyMessageDelayed(MSG_START_NETWORK_SERVICE, WIFI_ACTIVE_MSG_DELAY);
+          }
+        }
       }
     }
   };
@@ -821,6 +828,7 @@ public class KodiApp extends Application {
   }
 
   private native void _startXbmc();
-  private native void _restartNetworkService();
+  private native void _startNetworkService();
+  private native void _stopNetworkService();
 
 }

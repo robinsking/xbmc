@@ -117,11 +117,19 @@ bool CSettingsManager::Save(TiXmlNode *root) const
 {
   CSharedLock lock(m_critical);
   CSharedLock settingsLock(m_settingsCritical);
+  
+  CLog::Log(LOGERROR, "CSettingsManager: save, this - %lu", (signed long)this);
   if (!m_initialized || root == NULL)
+  {
+    CLog::Log(LOGERROR, "CSettingsManager: m_initialized - %d", (int)m_initialized);
     return false;
+  }
 
   if (!OnSettingsSaving())
+  {
+    CLog::Log(LOGERROR, "CSettingsManager: OnSettingsSaving fails");
     return false;
+  }
 
   if (!Serialize(root))
   {
@@ -133,7 +141,10 @@ bool CSettingsManager::Save(TiXmlNode *root) const
   for (std::set<ISubSettings*>::const_iterator it = m_subSettings.begin(); it != m_subSettings.end(); ++it)
   {
     if (!(*it)->Save(root))
+    {
+      CLog::Log(LOGERROR, "CSettingsManager: subSettings fails");
       return false;
+    }
   }
 
   OnSettingsSaved();

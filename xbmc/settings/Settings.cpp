@@ -412,14 +412,14 @@ const std::string CSettings::SETTING_GENERAL_ADDONBROKENFILTER = "general.addonb
 CSettings::CSettings()
   : m_initialized(false)
 {
-  m_settingsManager = new CSettingsManager();
+  //m_settingsManager = new CSettingsManager();
 }
 
 CSettings::~CSettings()
 {
   Uninitialize();
 
-  delete m_settingsManager;
+  //delete m_settingsManager;
 }
 
 CSettings& CSettings::GetInstance()
@@ -433,6 +433,8 @@ bool CSettings::Initialize()
   CSingleLock lock(m_critical);
   if (m_initialized)
     return false;
+
+  m_settingsManager = new CSettingsManager();
 
   // register custom setting types
   InitializeSettingTypes();
@@ -523,13 +525,23 @@ bool CSettings::Save(const std::string &file)
   CXBMCTinyXML xmlDoc;
   TiXmlElement rootElement(SETTINGS_XML_ROOT);
   TiXmlNode *root = xmlDoc.InsertEndChild(rootElement);
+
+  CLog::Log(LOGERROR, "CSettings: save");
   if (root == NULL)
+  {
+    CLog::Log(LOGERROR, "CSettings: xml root is NULL");
     return false;
+  }
 
   if (!m_settingsManager->Save(root))
+  {
+    CLog::Log(LOGERROR, "CSettings: Fail to save in Settings Manager.");
     return false;
+  }
 
-  return xmlDoc.SaveFile(file);
+  bool result = xmlDoc.SaveFile(file);
+  CLog::Log(LOGERROR, "CSettings: Save XML to file. result - %d", (int)result);
+  return result;
 }
 
 void CSettings::Unload()
@@ -646,6 +658,7 @@ void CSettings::Uninitialize()
 #endif
 
   m_initialized = false;
+  delete m_settingsManager;
 }
 
 void CSettings::RegisterCallback(ISettingCallback *callback, const std::set<std::string> &settingList)

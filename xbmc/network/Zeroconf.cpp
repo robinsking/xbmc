@@ -37,6 +37,8 @@
 #include "mdns/ZeroconfMDNS.h"
 #endif
 
+#include <utils/log.h>
+
 #ifndef HAS_ZEROCONF
 //dummy implementation used if no zeroconf is present
 //should be optimized away
@@ -115,11 +117,13 @@ bool CZeroconf::Start()
   CSingleLock lock(*mp_crit_sec);
   if(!IsZCdaemonRunning())
   {
+    CLog::Log(LOGDEBUG, "CZeroconf: IsZCdaemonRunning - false");
     CSettings::GetInstance().SetBool(CSettings::SETTING_SERVICES_ZEROCONF, false);
     if (CSettings::GetInstance().GetBool(CSettings::SETTING_SERVICES_AIRPLAY))
       CSettings::GetInstance().SetBool(CSettings::SETTING_SERVICES_AIRPLAY, false);
     return false;
   }
+  CLog::Log(LOGDEBUG, "CZeroconf: start, m_started = %d", (int)m_started);
   if(m_started)
     return true;
   m_started = true;
@@ -142,6 +146,7 @@ CZeroconf*  CZeroconf::GetInstance()
   CAtomicSpinLock lock(sm_singleton_guard);
   if(!smp_instance)
   {
+    CLog::Log(LOGDEBUG, "CZeroconf GetInstance - new instance");
 #ifndef HAS_ZEROCONF
     smp_instance = new CZeroconfDummy;
 #else
@@ -161,6 +166,7 @@ CZeroconf*  CZeroconf::GetInstance()
 void CZeroconf::ReleaseInstance()
 {
   CAtomicSpinLock lock(sm_singleton_guard);
+  CLog::Log(LOGDEBUG, "CZeroconf ReleaseInstance");
   delete smp_instance;
   smp_instance = 0;
 }
@@ -177,8 +183,11 @@ CZeroconf::CPublish::CPublish(const tServiceMap& servmap)
 
 bool CZeroconf::CPublish::DoWork()
 {
+  CLog::Log(LOGDEBUG, "CZeroconf::CPublish: DoWork");
   for(tServiceMap::const_iterator it = m_servmap.begin(); it != m_servmap.end(); ++it)
+  {
+    CLog::Log(LOGDEBUG, "CZeroconf::CPublish: DoWork iterator");
     CZeroconf::GetInstance()->doPublishService(it->first, it->second.type, it->second.name, it->second.port, it->second.txt);
-
+  }
   return true;
 }

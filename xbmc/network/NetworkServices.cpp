@@ -498,6 +498,10 @@ void CNetworkServices::Stop(bool bWait)
   StopJSONRPCServer(bWait);
   StopAirPlayServer(bWait);
   StopAirTunesServer(bWait);
+  if (bWait)
+  {
+    CZeroconf::ReleaseInstance();
+  }
 }
 
 bool CNetworkServices::StartWebserver()

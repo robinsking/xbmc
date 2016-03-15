@@ -39,6 +39,7 @@
 #if !defined(TARGET_WINDOWS)
 #include "main/posix/MessagePrinter.h"
 #endif
+#include "android/activity/XBMCApp.h"
 
 extern "C" int XBMC_Run(bool renderGUI)
 {
@@ -58,6 +59,7 @@ extern "C" int XBMC_Run(bool renderGUI)
 
   if (!g_application.Create())
   {
+    CXBMCApp::android_printf("Xbmc.cpp, ERROR: Unable to create application.");
     CMessagePrinter::DisplayError("ERROR: Unable to create application. Exiting");
     return status;
   }
@@ -87,6 +89,7 @@ extern "C" int XBMC_Run(bool renderGUI)
   }
   if (!g_application.Initialize())
   {
+    CXBMCApp::android_printf("Xbmc.cpp, ERROR: Unable to Initialize.");
     CMessagePrinter::DisplayError("ERROR: Unable to Initialize. Exiting");
     return status;
   }
@@ -111,12 +114,14 @@ extern "C" int XBMC_Run(bool renderGUI)
   catch (const XbmcCommons::UncheckedException &e)
   {
     e.LogThrowMessage("CApplication::Create()");
+    CXBMCApp::android_printf("Xbmc.cpp, ERROR: Exception caught on main loop.");
     CMessagePrinter::DisplayError("ERROR: Exception caught on main loop. Exiting");
     status = -1;
   }
 #endif
   catch(...)
   {
+    CXBMCApp::android_printf("Xbmc.cpp, ERROR: Exception caught on main loop. 2nd.");
     CMessagePrinter::DisplayError("ERROR: Exception caught on main loop. Exiting");
     status = -1;
   }

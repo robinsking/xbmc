@@ -129,14 +129,23 @@ CXBMCApp::~CXBMCApp()
   delete m_wakeLock;
 }
 
-void CXBMCApp::restartNetworkService()
+void CXBMCApp::stopNetworkService()
 {
   if (!m_xbmcappinstance)
   {
-    android_printf("CXBMCApp: restartNetworkService, NOT initialized!");
+    android_printf("CXBMCApp: stopNetworkService, NOT initialized!");
     return;
   }
   CApplicationMessenger::GetInstance().PostMsg(TMSG_NETWORKMESSAGE, CNetwork::SERVICES_DOWN, 1);
+}
+
+void CXBMCApp::startNetworkService()
+{
+  if (!m_xbmcappinstance)
+  {
+    android_printf("CXBMCApp: startNetworkService, NOT initialized!");
+    return;
+  }
   CApplicationMessenger::GetInstance().PostMsg(TMSG_NETWORKMESSAGE, CNetwork::SERVICES_UP, 1);
 }
 
