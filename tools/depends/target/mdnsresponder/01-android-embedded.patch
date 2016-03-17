@@ -114,7 +114,7 @@ diff -uPr ./mDNSCore/mDnsEmbedded.c ./mDNSCore/mDnsEmbedded.c
 +#else
 +	mDNS_Close(&mDNSStorage);
 +#endif
-+	mDNSIsInitialized = 1;
++	mDNSIsInitialized = 0;
 +}
 +
 +#ifdef WIN32
