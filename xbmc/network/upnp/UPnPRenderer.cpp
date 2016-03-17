@@ -82,8 +82,8 @@ CUPnPRenderer::SetupServices()
     PLT_Service* service = NULL;
     NPT_CHECK_FATAL(FindServiceByType("urn:schemas-upnp-org:service:ConnectionManager:1", service));
     service->SetStateVariable("SinkProtocolInfo"
-        ,"http-get:*:*:*"
-        ",xbmc-get:*:*:*"
+        ,/*"http-get:*:*:*"
+        ",xbmc-get:*:*:*"*/
         ",http-get:*:audio/mkv:*"
         ",http-get:*:audio/mpegurl:*"
         ",http-get:*:audio/mpeg:*"
@@ -131,7 +131,7 @@ CUPnPRenderer::SetupServices()
         ",http-get:*:application/x-shockwave-flash:*"
         ",http-get:*:application/ogg:*"
         ",http-get:*:application/sdp:*"
-        ",http-get:*:image/gif:*"
+        /*",http-get:*:image/gif:*"
         ",http-get:*:image/jpeg:*"
         ",http-get:*:image/ief:*"
         ",http-get:*:image/png:*"
@@ -172,7 +172,7 @@ CUPnPRenderer::SetupServices()
         ",http-get:*:video/x-ms-wmx:*"
         ",http-get:*:video/x-ms-wvx:*"
         ",http-get:*:video/x-msvideo:*"
-        ",http-get:*:video/x-xvid:*"
+        ",http-get:*:video/x-xvid:*"*/
         );
 
     NPT_CHECK_FATAL(FindServiceByType("urn:schemas-upnp-org:service:AVTransport:1", service));

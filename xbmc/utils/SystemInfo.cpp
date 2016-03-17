@@ -73,6 +73,11 @@
 #include <linux/version.h>
 #endif
 
+#include <string>
+#include <iostream>
+#include <cstdio>
+#include <memory>
+
 /* Expand macro before stringify */
 #define STR_MACRO(x) #x
 #define XSTR_MACRO(x) STR_MACRO(x)
@@ -1233,7 +1238,23 @@ std::string CSysInfo::GetDeviceName()
     g_application.getNetwork().GetHostName(hostname);
     return StringUtils::Format("%s (%s)", friendlyName.c_str(), hostname.c_str());
   }
-  
+#if defined(TARGET_ANDROID)
+  /*else if (StringUtils::EqualsNoCase(friendlyName, "QLOVE"))
+  {
+    std::shared_ptr<FILE> pipe(popen("getprop ro.serialno", "r"), pclose);
+    std::string result = "";
+    if (pipe)
+    {
+      char buffer[128];
+      while (!feof(pipe.get())) {
+          if (fgets(buffer, 128, pipe.get()) != NULL)
+              result += buffer;
+      }
+    }
+    return StringUtils::Format("%s (%s)", friendlyName.c_str(), result.c_str());
+  }*/
+#endif
+
   return friendlyName;
 }
 

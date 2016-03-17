@@ -57,6 +57,9 @@ NPT_SET_LOCAL_LOGGER("xbmc.upnp")
 #define UPNP_DEFAULT_MAX_RETURNED_ITEMS 200
 #define UPNP_DEFAULT_MIN_RETURNED_ITEMS 30
 
+#define MANUFACTURER "Shu Zi Jia Yuan"
+#define MANUFACTURER_URL "http://www.kinstalk.com/"
+#define MODEL "QLOVE"
 /*
 # Play speed
 #    1 normal
@@ -638,12 +641,12 @@ CUPnP::CreateServer(int port /* = 0 */)
                     CSettings::GetInstance().GetInt(CSettings::SETTING_SERVICES_WEBSERVERPORT),
                     "/").ToString();
 
-    device->m_ModelName        = "Kodi";
+    device->m_ModelName        = MODEL;
     device->m_ModelNumber      = CSysInfo::GetVersion().c_str();
-    device->m_ModelDescription = "Kodi - Media Server";
-    device->m_ModelURL         = "http://kodi.tv/";
-    device->m_Manufacturer     = "XBMC Foundation";
-    device->m_ManufacturerURL  = "http://kodi.tv/";
+    device->m_ModelDescription = MODEL" - Media Server";
+    device->m_ModelURL         = MANUFACTURER_URL;
+    device->m_Manufacturer     = MANUFACTURER;
+    device->m_ManufacturerURL  = MANUFACTURER_URL;
 
     device->SetDelegate(device);
     return device;
@@ -720,12 +723,12 @@ CUPnP::CreateRenderer(int port /* = 0 */)
         NPT_HttpUrl(m_IP.c_str(),
                     CSettings::GetInstance().GetInt(CSettings::SETTING_SERVICES_WEBSERVERPORT),
                     "/").ToString();
-    device->m_ModelName        = "Kodi";
+    device->m_ModelName        = MODEL;
     device->m_ModelNumber      = CSysInfo::GetVersion().c_str();
-    device->m_ModelDescription = "Kodi - Media Renderer";
-    device->m_ModelURL         = "http://kodi.tv/";
-    device->m_Manufacturer     = "XBMC Foundation";
-    device->m_ManufacturerURL  = "http://kodi.tv/";
+    device->m_ModelDescription = MODEL" - Media Renderer";
+    device->m_ModelURL         = MANUFACTURER_URL;
+    device->m_Manufacturer     = MANUFACTURER;
+    device->m_ManufacturerURL  = MANUFACTURER_URL;
 
     return device;
 }

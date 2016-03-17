@@ -15,7 +15,7 @@ diff -uPr ./mDNSCore/mDNSEmbeddedAPI.h ./mDNSCore/mDNSEmbeddedAPI.h
 diff -uPr ./mDNSCore/mDnsEmbedded.c ./mDNSCore/mDnsEmbedded.c
 --- ./mDNSCore/mDnsEmbedded.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./mDNSCore/mDnsEmbedded.c	2013-06-10 18:45:59.000000000 +0200
-@@ -0,0 +1,145 @@
+@@ -0,0 +1,146 @@
 +/**
 + *  @file
 + *  @brief      Wrapper for mDNSEmbeddedAPI with Bonjour.
