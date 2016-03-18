@@ -72,6 +72,8 @@ namespace MEDIA_DETECT
 #include "ApplicationPlayer.h"
 #include "interfaces/IActionListener.h"
 
+#include "music/tags/MusicInfoTag.h"
+
 class CSeekHandler;
 class CInertialScrollingHandler;
 class DPMSSupport;
@@ -142,6 +144,9 @@ public:
   virtual void Preflight();
   virtual bool Create() override;
   virtual bool Cleanup() override;
+
+  void RefreshMusicTag(MUSIC_INFO::CMusicInfoTag &tag);
+  void RefreshCoverArt(std::string &cover);
 
   bool CreateGUI();
   bool InitWindow(RESOLUTION res = RES_INVALID);

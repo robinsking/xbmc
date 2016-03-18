@@ -3669,6 +3669,28 @@ void CApplication::OnPlayBackEnded()
   g_windowManager.SendThreadMessage(msg);
 }
 
+void CApplication::RefreshMusicTag(MUSIC_INFO::CMusicInfoTag &tag)
+{
+  *(CurrentFileItem().GetMusicInfoTag()) = tag;
+  CLog::LogF(LOGDEBUG,"RefreshMusicTag, ArtistString - %s", tag.GetArtistString().c_str());
+  CLog::LogF(LOGDEBUG,"RefreshMusicTag, Title - %s", tag.GetTitle().c_str());
+#ifdef TARGET_ANDROID
+  CXBMCApp::onPlayInfoChanged();
+#endif
+}
+
+void CApplication::RefreshCoverArt(std::string &cover)
+{
+  CLog::LogF(LOGDEBUG,"RefreshCoverArt, cover - %s", cover.c_str());
+  if (CFile::Exists(cover))
+  {
+    CurrentFileItem().SetArt("thumb", cover);
+  }
+#ifdef TARGET_ANDROID
+  CXBMCApp::onPlayInfoChanged();
+#endif
+}
+
 void CApplication::OnPlayBackStarted()
 {
   CSingleLock lock(m_playStateMutex);

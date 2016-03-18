@@ -106,7 +106,7 @@ extern "C" int XBMC_Run(bool renderGUI)
   }
 #endif
 
-  try
+  //try
   {
     status = g_application.Run();
   }
@@ -119,12 +119,13 @@ extern "C" int XBMC_Run(bool renderGUI)
     status = -1;
   }
 #endif
-  catch(...)
+  // Let it crash since we can recover it...
+  /*catch(...)
   {
     CXBMCApp::android_printf("Xbmc.cpp, ERROR: Exception caught on main loop. 2nd.");
     CMessagePrinter::DisplayError("ERROR: Exception caught on main loop. Exiting");
     status = -1;
-  }
+  }*/
 
 #ifdef TARGET_WINDOWS
   // the end

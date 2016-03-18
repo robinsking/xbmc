@@ -69,6 +69,11 @@ public:
 
   bool isValid() { return m_activity != NULL; }
 
+  int getCurrentPlayState();
+  int getCurrentCoverArt(char **pResult);
+  std::string getCurrentArtist();
+  std::string getCurrentTitle();
+
   void onStart();
   void onResume();
   void onPause();
@@ -121,6 +126,9 @@ public:
   static void OnPlayBackStopped();
   static void OnPlayBackEnded();
 
+  static void onPlayInfoChanged();
+  static void onPlayStateChanged();
+
   static CXBMCApp* get() { return m_xbmcappinstance; }
 
 protected:
@@ -152,6 +160,9 @@ private:
 
   static ANativeWindow* m_window;
   static CEvent m_windowCreated;
+
+  // 0 - idle; 1 - playing; 2 - pause; 3 - stop; 4 - end;
+  int m_playState;
 
   void XBMC_Pause(bool pause);
   void XBMC_Stop();

@@ -827,8 +827,30 @@ public class KodiApp extends Application {
   {
   }
 
+  public void onPlayStateChanged()
+  {
+    Log.d(TAG, "onPlayStateChanged");
+    Log.d(TAG, "getCurrentPlayState = " + _getCurrentPlayState());
+  }
+
+  public void onPlayInfoChanged()
+  {
+    Log.d(TAG, "onPlayInfoChanged");
+    Log.d(TAG, "getCurrentArtist = " + _getCurrentArtist());
+    Log.d(TAG, "getCurrentTitle = " + _getCurrentTitle());
+    byte[] coverBytes = _getCurrentCoverArt();
+    if (coverBytes != null)
+    {
+      Log.d(TAG, "coverBytes: length = " + coverBytes.length);
+    }
+  }
+
   private native void _startXbmc();
   private native void _startNetworkService();
   private native void _stopNetworkService();
+  private native byte[] _getCurrentCoverArt();
+  private native int _getCurrentPlayState();
+  private native String _getCurrentArtist();
+  private native String _getCurrentTitle();
 
 }

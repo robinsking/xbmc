@@ -81,6 +81,8 @@
 
 #include "CompileInfo.h"
 #include "network/Network.h"
+#include "filesystem/File.h"
+#include "android/jni/jutils/jutils-details.hpp"
 
 #define GIGABYTES       1073741824
 #define NO_UI           1
@@ -115,6 +117,7 @@ CXBMCApp::CXBMCApp(ANativeActivity* nativeActivity)
   m_activity = nativeActivity;
   m_firstrun = true;
   m_exiting=false;
+  m_playState = 0;
   if (m_activity == NULL)
   {
     android_printf("CXBMCApp: invalid ANativeActivity instance");
@@ -526,8 +529,61 @@ int CXBMCApp::GetDPI()
   return dpi;
 }
 
+int CXBMCApp::getCurrentPlayState()
+{
+  return m_playState;
+}
+int CXBMCApp::getCurrentCoverArt(char **pResult)
+{
+  std::string coverArtUrl = g_application.CurrentFileItem().GetArt("thumb");
+  if (XFILE::CFile::Exists(coverArtUrl))
+  {
+    XFILE::CFile artFile;
+    bool bOpenFile = artFile.Open(coverArtUrl);
+    if (bOpenFile)
+    {
+      int fileSize = artFile.GetLength();
+      *pResult = (char*)malloc(fileSize);
+      if (*pResult != NULL)
+      {
+        fileSize = artFile.Read(*pResult, fileSize);
+        artFile.Close();
+        return fileSize;
+      }
+    }
+  }
+  return 0;
+}
+std::string CXBMCApp::getCurrentArtist()
+{
+  MUSIC_INFO::CMusicInfoTag* pTag = g_application.CurrentFileItem().GetMusicInfoTag();
+  if (pTag != NULL)
+  {
+    return pTag->GetArtistString();
+  }
+  else
+  {
+    return std::string("");
+  }
+}
+std::string CXBMCApp::getCurrentTitle()
+{
+  MUSIC_INFO::CMusicInfoTag* pTag = g_application.CurrentFileItem().GetMusicInfoTag();
+  if (pTag != NULL)
+  {
+    return pTag->GetTitle();
+  }
+  else
+  {
+    return std::string("");
+  }
+}
+
 void CXBMCApp::OnPlayBackStarted()
 {
+  m_xbmcappinstance->m_playState = 1;
+  onPlayStateChanged();
+  onPlayInfoChanged();
   AcquireAudioFocus();
   registerMediaButtonEventReceiver();
   CAndroidKey::SetHandleMediaKeys(true);
@@ -535,16 +591,21 @@ void CXBMCApp::OnPlayBackStarted()
 
 void CXBMCApp::OnPlayBackPaused()
 {
+  m_xbmcappinstance->m_playState = 2;
+  onPlayStateChanged();
   ReleaseAudioFocus();
 }
 
 void CXBMCApp::OnPlayBackResumed()
 {
+  m_xbmcappinstance->m_playState = 1;
   AcquireAudioFocus();
 }
 
 void CXBMCApp::OnPlayBackStopped()
 {
+  m_xbmcappinstance->m_playState = 3;
+  onPlayStateChanged();
   CAndroidKey::SetHandleMediaKeys(false);
   unregisterMediaButtonEventReceiver();
   ReleaseAudioFocus();
@@ -552,6 +613,8 @@ void CXBMCApp::OnPlayBackStopped()
 
 void CXBMCApp::OnPlayBackEnded()
 {
+  m_xbmcappinstance->m_playState = 4;
+  onPlayStateChanged();
   CAndroidKey::SetHandleMediaKeys(false);
   unregisterMediaButtonEventReceiver();
   ReleaseAudioFocus();
@@ -820,9 +883,19 @@ void CXBMCApp::onNewIntent(CJNIIntent intent)
 void CXBMCApp::onVolumeChanged(int volume)
 {
   // System volume was used; Reset Kodi volume to 100% if it'not, already
-  if (g_application.GetVolume(false) != 1.0)
+  if (g_application.GetVolume(false) != 1.0 && !NO_UI)
     CApplicationMessenger::GetInstance().PostMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(
                                                  new CAction(ACTION_VOLUME_SET, static_cast<float>(CXBMCApp::GetMaxSystemVolume()))));
+}
+
+void CXBMCApp::onPlayStateChanged()
+{
+  onPlayStateChangedContext();
+}
+
+void CXBMCApp::onPlayInfoChanged()
+{
+  onPlayInfoChangedContext();
 }
 
 void CXBMCApp::onAudioFocusChange(int focusChange)
@@ -832,7 +905,7 @@ void CXBMCApp::onAudioFocusChange(int focusChange)
   {
     unregisterMediaButtonEventReceiver();
 
-    if (g_application.m_pPlayer->IsPlaying() && !g_application.m_pPlayer->IsPaused())
+    if (g_application.m_pPlayer->IsPlaying() && !g_application.m_pPlayer->IsPaused() && !NO_UI)
       CApplicationMessenger::GetInstance().SendMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(new CAction(ACTION_PAUSE)));
   }
 }

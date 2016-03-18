@@ -95,6 +95,59 @@ static CXBMCApp* s_xbmcApp;
 
 static void* thread_run(void *arg);
 
+int getCurrentPlayState(JNIEnv *env, jobject context)
+{
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getCurrentCoverArt fail, s_xbmcApp is NULL");
+    return 0;
+  }
+  return s_xbmcApp->getCurrentPlayState();
+}
+jbyteArray getCurrentCoverArt(JNIEnv *env, jobject context)
+{
+  char *pResult = NULL;
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getCurrentCoverArt fail, s_xbmcApp is NULL");
+    return 0;
+  }
+  int size = s_xbmcApp->getCurrentCoverArt(&pResult);
+  if (size <= 0 || pResult == NULL)
+  {
+    CXBMCApp::android_printf(" => getCurrentCoverArt fail, fail to get image from xbmcApp");
+    return 0;
+  }
+  jbyteArray bytes = env->NewByteArray(size);
+  if (bytes == 0)
+  {
+    CXBMCApp::android_printf(" => getCurrentCoverArt fail, Error in creating the image");
+    free(pResult);
+    return 0;
+  }
+  env->SetByteArrayRegion(bytes, 0, size, (jbyte*) pResult);
+  free(pResult);
+  return bytes;
+}
+jstring getCurrentArtist(JNIEnv *env, jobject context)
+{
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getCurrentArtist fail, s_xbmcApp is NULL");
+    return 0;
+  }
+  return env->NewStringUTF(s_xbmcApp->getCurrentArtist().c_str());
+}
+jstring getCurrentTitle(JNIEnv *env, jobject context)
+{
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getCurrentTitle fail, s_xbmcApp is NULL");
+    return 0;
+  }
+  return env->NewStringUTF(s_xbmcApp->getCurrentTitle().c_str());
+}
+
 void stopNetworkService(JNIEnv *env, jobject context)
 {
   CXBMCApp::android_printf(" => stopNetworkService");
@@ -199,15 +252,16 @@ static void* thread_run(void *arg)
   }
 
   CXBMCApp::android_printf(" => running XBMC_Run...");
-  try
+  //try
   {
     int status = XBMC_Run(false);
     CXBMCApp::android_printf(" => XBMC_Run finished with %d", status);
   }
-  catch(...)
+  // Let it crash since we can recover it...
+  /*catch(...)
   {
     CXBMCApp::android_printf("ERROR: Exception caught on main loop. Exiting");
-  }
+  }*/
   return NULL;
 }
 
@@ -314,6 +368,34 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
       (void*)&stopNetworkService
     };
     env->RegisterNatives(cKodiApp, &mStopNetworkService, 1);
+
+    JNINativeMethod mGetCurrentCoverArt = {
+      "_getCurrentCoverArt",
+      "()[B",
+      (void*)&getCurrentCoverArt
+    };
+    env->RegisterNatives(cKodiApp, &mGetCurrentCoverArt, 1);
+
+    JNINativeMethod mGetCurrentPlayState = {
+      "_getCurrentPlayState",
+      "()I",
+      (void*)&getCurrentPlayState
+    };
+    env->RegisterNatives(cKodiApp, &mGetCurrentPlayState, 1);
+
+    JNINativeMethod mGetCurrentArtist = {
+      "_getCurrentArtist",
+      "()Ljava/lang/String;",
+      (void*)&getCurrentArtist
+    };
+    env->RegisterNatives(cKodiApp, &mGetCurrentArtist, 1);
+
+    JNINativeMethod mGetCurrentTitle = {
+      "_getCurrentTitle",
+      "()Ljava/lang/String;",
+      (void*)&getCurrentTitle
+    };
+    env->RegisterNatives(cKodiApp, &mGetCurrentTitle, 1);
   }
 
   return version;

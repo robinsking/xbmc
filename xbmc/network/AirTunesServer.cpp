@@ -90,6 +90,7 @@ std::map<std::string, std::string> decodeDMAP(const char *buffer, unsigned int s
 {
   std::map<std::string, std::string> result;
   unsigned int offset = 8;
+  CLog::Log(LOGDEBUG, "decodeDMAP");
   while (offset < size)
   {
     std::string tag;
@@ -101,6 +102,7 @@ std::map<std::string, std::string> decodeDMAP(const char *buffer, unsigned int s
     content.append(buffer + offset, length);//possible fixme - utf8?
     offset += length;
     result[tag] = content;
+    CLog::Log(LOGDEBUG, "decodeDMAP, tag = %s, content = %s", tag.c_str(), content.c_str());
   }
   return result;
 }
@@ -131,7 +133,8 @@ void CAirTunesServer::RefreshMetadata()
     tag.SetTitle(m_metadata[1]);//title
   if (m_metadata[2].length())
     tag.SetArtist(m_metadata[2]);//artist
-  
+
+  g_application.RefreshMusicTag(tag);
   CApplicationMessenger::GetInstance().PostMsg(TMSG_UPDATE_CURRENT_ITEM, 1, -1, static_cast<void*>(new CFileItem(tag)));
 }
 
@@ -148,6 +151,7 @@ void CAirTunesServer::RefreshCoverArt(const char *outputFilename/* = NULL*/)
   g_infoManager.SetCurrentAlbumThumb("");
   //update the ui
   g_infoManager.SetCurrentAlbumThumb(coverArtFile);
+  g_application.RefreshCoverArt(coverArtFile);
   //update the ui
   CGUIMessage msg(GUI_MSG_NOTIFY_ALL,0,0,GUI_MSG_REFRESH_THUMBS);
   g_windowManager.SendThreadMessage(msg);

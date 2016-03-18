@@ -202,3 +202,15 @@ CJNIWindow CJNIContext::getWindow()
   return call_method<jhobject>(m_context,
     "getWindow", "()Landroid/view/Window;");
 }
+
+void CJNIContext::onPlayStateChangedContext()
+{
+  call_method<void>(m_context,
+                    "onPlayStateChanged", "()V");
+}
+
+void CJNIContext::onPlayInfoChangedContext()
+{
+  call_method<void>(m_context,
+                    "onPlayInfoChanged", "()V");
+}

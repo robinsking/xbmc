@@ -53,6 +53,8 @@ public:
   static CJNIFile getExternalFilesDir(const std::string &path);
   static CJNIContentResolver getContentResolver();
   static CJNIWindow getWindow();
+  static void onPlayStateChangedContext();  
+  static void onPlayInfoChangedContext();
 
 protected:
   CJNIContext(const ANativeActivity *nativeActivity);
