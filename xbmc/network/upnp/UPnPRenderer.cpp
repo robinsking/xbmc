@@ -477,7 +477,7 @@ CUPnPRenderer::OnPlay(PLT_ActionReference& action)
     if (g_windowManager.GetActiveWindow() == WINDOW_SLIDESHOW) {
         return NPT_SUCCESS;
     } else if (g_application.m_pPlayer->IsPausedPlayback()) {
-      CApplicationMessenger::GetInstance().SendMsg(TMSG_MEDIA_PAUSE);
+      CApplicationMessenger::GetInstance().SendMsg(TMSG_MEDIA_UNPAUSE);
     } else if (!g_application.m_pPlayer->IsPlaying()) {
         NPT_String uri, meta;
         PLT_Service* service;
