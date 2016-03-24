@@ -39,6 +39,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.util.Log;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
@@ -93,6 +94,8 @@ public class KodiApp extends Application {
   private boolean mNetworkStarted = false;
   private boolean mWiFiActive = false;
   private Object mXbmcLock = new Object();
+
+  private String mVersionName;
 
   private class StateMachine extends Handler {
 
@@ -479,7 +482,7 @@ public class KodiApp extends Application {
     sPackagePath = getPackageResourcePath();
     fPackagePath = new File(sPackagePath);
     String obbfn = "";
-    if (fPackagePath.length() < 40 * 1024 * 1024)
+    if (fPackagePath.length() < 1 * 1024 * 1024)
     {
       sPackagePath = System.getProperty("@APP_NAME@.obb", "");
       if (sPackagePath.equals(""))
@@ -709,9 +712,25 @@ public class KodiApp extends Application {
     return (ni != null && ni.getType() == ConnectivityManager.TYPE_WIFI);
   }
 
+  private String getVersion()
+  {
+    String result = "Unknown";
+    try {
+      PackageInfo pi = getPackageManager().getPackageInfo(
+              getPackageName(), 0);
+      result = pi.versionName;
+    } catch (Exception e) {
+      Log.e(TAG, "Fail to get version Name", e);
+    }
+    return result;
+  }
+
   @Override
   public void onCreate() {
     super.onCreate();
+
+    mVersionName = getVersion();
+    Log.d(TAG, "mVersionName = " + mVersionName);
 
     System.loadLibrary("@APP_NAME_LC@");
 
@@ -829,8 +848,8 @@ public class KodiApp extends Application {
 
   public void onPlayStateChanged()
   {
-    Log.d(TAG, "onPlayStateChanged");
-    Log.d(TAG, "getCurrentPlayState = " + _getCurrentPlayState());
+    Log.d(TAG, "onPlayStateChanged, mVersionName = " + mVersionName +
+        " getCurrentPlayState = " + _getCurrentPlayState());
   }
 
   public void onPlayInfoChanged()

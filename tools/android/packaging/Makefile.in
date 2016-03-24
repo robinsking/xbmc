@@ -58,7 +58,7 @@ libs= $(DSTLIBS)
 
 all: apk
 
-apk: apk-clean sharedapk package apk-sign
+apk: apk-clean sharedapk package lib-package lib-package apk-sign
 
 obb: apk-clean sharedobb
 
@@ -145,14 +145,22 @@ xbmc/classes.dex: res
 package: libs symbols python xbmc/classes.dex
 	@echo "Creating package..."
 	@cp images/@APP_NAME_LC@app-debug-skeleton.apk images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk
-	@cd xbmc; $(ZIP) -r -q ../images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk lib/$(CPU) assets classes.dex
+	@cd xbmc; $(ZIP) -r -q ../images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk assets classes.dex
+
+lib-package:
+	@echo "package lib..."
+	rm -rf $(XBMCROOT)/out
+	mkdir -p $(XBMCROOT)/out
+	mkdir -p $(XBMCROOT)/out/lib/$(ARCH)
+	cp -fp xbmc/lib/$(CPU)/* $(XBMCROOT)/out/lib/$(ARCH)
 
 apk-sign:
 	@echo "Signing..."
+	mkdir -p $(XBMCROOT)/out
 	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore $(SIGN_STORE) -storepass $(SIGN_STOREPASS) $(SIGN_KEYPASS_OPT) images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(SIGN_KEY)
-	@$(ZIPALIGN) -f 4 images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(XBMCROOT)/@APP_NAME_LC@app-$(CPU)-debug.apk
+	@$(ZIPALIGN) -f 4 images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(XBMCROOT)/out/@APP_NAME_LC@app.apk
 	@rm images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk
-	@echo "$(XBMCROOT)/@APP_NAME_LC@app-$(CPU)-debug.apk created"
+	@echo "$(XBMCROOT)/out/@APP_NAME_LC@app-$(CPU)-debug.apk created"
 
 $(PREFIX)/lib/xbmc/lib@APP_NAME_LC@.so: $(SRCLIBS)
 	$(MAKE) -C ../../depends/target/xbmc
@@ -173,6 +181,7 @@ apk-clean:
 	rm -f xbmc/src/R.java
 	rm -f xbmc/classes.dex
 	rm -rf assets
+	rm -rf $(XBMCROOT)/out
 
 .PHONY: force libs assets python sharedapk sharedobb res package
 

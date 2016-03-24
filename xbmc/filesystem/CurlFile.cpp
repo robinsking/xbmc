@@ -187,7 +187,7 @@ size_t CCurlFile::CReadState::ReadCallback(char *buffer, size_t size, size_t nit
 size_t CCurlFile::CReadState::WriteCallback(char *buffer, size_t size, size_t nitems)
 {
   unsigned int amount = size * nitems;
-//  CLog::Log(LOGDEBUG, "CCurlFile::WriteCallback (%p) with %i bytes, readsize = %i, writesize = %i", this, amount, m_buffer.getMaxReadSize(), m_buffer.getMaxWriteSize() - m_overflowSize);
+  CLog::Log(LOGDEBUG, "CCurlFile::WriteCallback (%p) with %i bytes, readsize = %i, writesize = %i", this, amount, m_buffer.getMaxReadSize(), m_buffer.getMaxWriteSize() - m_overflowSize);
   if (m_overflowSize)
   {
     // we have our overflow buffer - first get rid of as much as we can

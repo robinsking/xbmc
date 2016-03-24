@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.xbmc.@APP_NAME_LC@"
     android:versionCode="@APP_VERSION_CODE@"
-    android:versionName="@APP_VERSION@" >
+    android:versionName="@APP_VERSION@.0324-01" >
 
     <uses-sdk android:minSdkVersion="17" android:targetSdkVersion="22" />
 
