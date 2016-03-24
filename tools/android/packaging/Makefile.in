@@ -157,9 +157,10 @@ lib-package:
 apk-sign:
 	@echo "Signing..."
 	mkdir -p $(XBMCROOT)/out
-	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore $(SIGN_STORE) -storepass $(SIGN_STOREPASS) $(SIGN_KEYPASS_OPT) images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(SIGN_KEY)
-	@$(ZIPALIGN) -f 4 images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(XBMCROOT)/out/@APP_NAME_LC@app.apk
+	@$(ZIPALIGN) -f 4 images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk $(XBMCROOT)/out/@APP_NAME_LC@app-unsign.apk
+	java -jar signapk.jar platform.x509.pem platform.pk8 $(XBMCROOT)/out/@APP_NAME_LC@app-unsign.apk $(XBMCROOT)/out/@APP_NAME_LC@app.apk
 	@rm images/@APP_NAME_LC@app-debug-$(CPU)-unaligned.apk
+	@rm $(XBMCROOT)/out/@APP_NAME_LC@app-unsign.apk
 	@echo "$(XBMCROOT)/out/@APP_NAME_LC@app-$(CPU)-debug.apk created"
 
 $(PREFIX)/lib/xbmc/lib@APP_NAME_LC@.so: $(SRCLIBS)
