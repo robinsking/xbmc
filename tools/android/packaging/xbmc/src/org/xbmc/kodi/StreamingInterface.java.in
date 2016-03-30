@@ -1,0 +1,187 @@
+package org.xbmc.@APP_NAME_LC@;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.os.Message;
+import android.os.SystemClock;
+import android.util.Log;
+
+public class StreamingInterface {
+  private static final String TAG = "StreamingInterface";
+  private static final boolean DEBUG = false;
+  private static StreamingInterface sMe;
+  
+  private KodiApp mContext;
+
+  private long mLastPlayTime = 0;
+  private long mPlayTimeStamp = 0;
+  private int mPlayState = STATE_IDLE;
+  
+  public static int STATE_IDLE = 0;
+  public static int STATE_PLAYING = 1;
+  public static int STATE_PAUSE = 2;
+  public static int STATE_STOP = 3;
+  public static int STATE_END = 4;
+  // If low layer state is playing, and play time not changed,
+  // the state will be transformed to Queuing.
+  public static int STATE_QUEUING = 10;
+
+  private static int QUEUING_CHECK_INTERVAL = 500;
+  private static int QUEUING_CHECK_THRES = 1 * 1000;
+
+  
+  private Handler mHandler;
+  
+  public class MyHandler extends Handler {
+    public static final int MSG_QUEUING_CHECK = 1;
+
+    public MyHandler(Looper l) {
+      super(l);
+    }
+
+    public void handleMessage(Message msg) {
+      switch (msg.what) {
+        case MSG_QUEUING_CHECK:
+          if (mPlayState == STATE_PLAYING || mPlayState == STATE_QUEUING) {
+            if (isQueuing()) {
+              setPlayState(STATE_QUEUING, false);
+            } else {
+              setPlayState(STATE_PLAYING, false);
+            }
+            mHandler.sendEmptyMessageDelayed(MSG_QUEUING_CHECK, QUEUING_CHECK_INTERVAL);
+          } else {
+            Log.i(TAG, "Stop Queuing check since it's not playing.");
+          }
+          break;
+      }
+    }
+  }
+  
+  private StreamingInterface(KodiApp context) {
+    HandlerThread ht = new HandlerThread("StreamingInterface");
+    ht.start();
+    mHandler = new MyHandler(ht.getLooper());
+    setContext(context);
+  }
+
+  public static StreamingInterface getInstance() {
+    return sMe;
+  }
+  
+  public static StreamingInterface init(KodiApp context) {
+    synchronized (StreamingInterface.class) {
+      if (sMe == null) {
+        sMe = new StreamingInterface(context);
+      } else {
+        Log.w(TAG, "init() called multiple times!  sMe = " + sMe);
+        sMe.setContext(context);
+      }
+      return sMe;
+    }
+  }
+
+  private void setContext(KodiApp context) {
+    mContext = context;
+  }
+
+  private void startQueuingCheck() {
+    mLastPlayTime = getPlayTime();
+    mPlayTimeStamp = SystemClock.uptimeMillis();
+
+    Log.d(TAG, "startQueuingCheck mLastPlayTime = " + mLastPlayTime + " mPlayTimeStamp = " + mPlayTimeStamp);
+
+    mHandler.sendEmptyMessageDelayed(MyHandler.MSG_QUEUING_CHECK, QUEUING_CHECK_INTERVAL);
+  }
+  
+  private boolean isQueuing() {
+    if (mPlayState == STATE_PLAYING) {
+      long current = SystemClock.uptimeMillis();
+      long playTime = getPlayTime();
+      if (playTime == mLastPlayTime) {
+         if (mPlayTimeStamp == 0) {
+           mPlayTimeStamp = current;
+         }
+         long notChangeTime = current - mPlayTimeStamp;
+         if (notChangeTime > QUEUING_CHECK_THRES) {
+           Log.d(TAG, "Play time - " + mLastPlayTime + " not changed for " + notChangeTime + " ms");
+           return true;
+         }
+      } else {
+        mPlayTimeStamp = current;
+        mLastPlayTime = playTime;
+      }
+    }
+    return false;
+  }
+
+  private int playStateToLowLayer(int playState) {
+    int result = playState;
+    if (playState == STATE_QUEUING) {
+      result = STATE_PLAYING;
+    }
+    return result;
+  }
+
+  private void setPlayState(int playState, boolean fromLowLayer) {
+    int cachedPlayState = fromLowLayer ? playStateToLowLayer(mPlayState) : mPlayState;
+    if (playState != cachedPlayState) {
+      Log.d(TAG, "setPlayState, mPlayState = " + mPlayState + "; playState = " + playState);
+
+      if(playState == STATE_PLAYING && mPlayState != STATE_QUEUING) {
+        startQueuingCheck();
+      }
+      mPlayState = playState;
+      // TODO: start state change broadcast
+    } else {
+      if (DEBUG) {
+        Log.d(TAG, "setPlayState, playState not changed. mPlayState = "
+            + mPlayState + "; playState = " + playState);
+      }
+    }
+  }
+
+  public void onPlayStateChanged() {
+    int playState = mContext._getCurrentPlayState();
+    setPlayState(playState, true);
+  }
+
+  public void onPlayInfoChanged() {
+    // TODO: start info change broadcast
+  }
+
+  public void startStreamingService() {
+    mContext.startNetworkService();
+  }
+
+  public void stopStreamingService() {
+    mContext.stopNetworkService();
+  }
+  
+  public byte[] getCurrentCoverArt() {
+    return mContext._getCurrentCoverArt();
+  }
+  
+  public int getCurrentPlayState() {
+    return mContext._getCurrentPlayState();
+  }
+  
+  public String _getCurrentArtist() {
+    return mContext._getCurrentArtist();
+  }
+  
+  public String getCurrentTitle() {
+    return mContext._getCurrentTitle();
+  }
+  
+  public long getTotalTime() {
+    return mContext._getTotalTime();
+  }
+  
+  public long getPlayTime() {
+    return mContext._getPlayTime();
+  }
+}

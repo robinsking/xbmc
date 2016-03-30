@@ -27,6 +27,8 @@
 #include "utils/StringUtils.h"
 #include "CompileInfo.h"
 
+#include "Application.h"
+
 #include "android/activity/JNIMainActivity.h"
 #include "messaging/ApplicationMessenger.h"
 
@@ -94,6 +96,34 @@ static ANativeActivity s_activity;
 static CXBMCApp* s_xbmcApp;
 
 static void* thread_run(void *arg);
+
+jlong getTotalTime(JNIEnv *env, jobject context)
+{
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getTotalTime fail, s_xbmcApp is NULL");
+    return 0;
+  }
+
+  jlong iTotalTime = (jlong)g_application.GetTotalTime();
+  return iTotalTime > 0 ? iTotalTime : 0;
+}
+
+jlong getPlayTime(JNIEnv *env, jobject context)
+{
+  if (s_xbmcApp == NULL)
+  {
+    CXBMCApp::android_printf(" => getPlayTime fail, s_xbmcApp is NULL");
+    return 0;
+  }
+  if (g_application.m_pPlayer->IsPlaying())
+  {
+    int64_t lPTS = (int64_t)(g_application.GetTime() * 1000);
+    if (lPTS < 0) lPTS = 0;
+    return lPTS;
+  }
+  return 0;
+}
 
 int getCurrentPlayState(JNIEnv *env, jobject context)
 {
@@ -396,6 +426,20 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
       (void*)&getCurrentTitle
     };
     env->RegisterNatives(cKodiApp, &mGetCurrentTitle, 1);
+
+    JNINativeMethod mGetTotalTime = {
+      "_getTotalTime",
+      "()J",
+      (void*)&getTotalTime
+    };
+    env->RegisterNatives(cKodiApp, &mGetTotalTime, 1);
+
+    JNINativeMethod mGetPlayTime = {
+      "_getPlayTime",
+      "()J",
+      (void*)&getPlayTime
+    };
+    env->RegisterNatives(cKodiApp, &mGetPlayTime, 1);
   }
 
   return version;

@@ -96,6 +96,7 @@ public class KodiApp extends Application {
   private Object mXbmcLock = new Object();
 
   private String mVersionName;
+  private static KodiApp sMe;
 
   private class StateMachine extends Handler {
 
@@ -647,7 +648,7 @@ public class KodiApp extends Application {
 
   private static final int MSG_STOP_NETWORK_SERVICE = 1;
   private static final int MSG_START_NETWORK_SERVICE = 2;
-  private static final int WIFI_ACTIVE_MSG_DELAY = 5 * 1000;
+  private static final int WIFI_ACTIVE_MSG_DELAY = 1 * 1000;
 
   private Handler mHandler = new Handler() {
     public void handleMessage(Message msg) {
@@ -695,16 +696,29 @@ public class KodiApp extends Application {
         if (mWiFiActive != wifiActive) {
           mWiFiActive = wifiActive;
           if (wifiActive) {
-            mHandler.removeMessages(MSG_STOP_NETWORK_SERVICE);
-            mHandler.removeMessages(MSG_START_NETWORK_SERVICE);
-
-            mHandler.sendEmptyMessage(MSG_STOP_NETWORK_SERVICE);
-            mHandler.sendEmptyMessageDelayed(MSG_START_NETWORK_SERVICE, WIFI_ACTIVE_MSG_DELAY);
+            startNetworkService();
+          } else {
+            stopNetworkService();
           }
         }
       }
     }
   };
+
+  public void startNetworkService() {
+    mHandler.removeMessages(MSG_STOP_NETWORK_SERVICE);
+    mHandler.removeMessages(MSG_START_NETWORK_SERVICE);
+
+    mHandler.sendEmptyMessage(MSG_STOP_NETWORK_SERVICE);
+    mHandler.sendEmptyMessageDelayed(MSG_START_NETWORK_SERVICE, WIFI_ACTIVE_MSG_DELAY);
+  }
+
+  public void stopNetworkService() {
+    mHandler.removeMessages(MSG_STOP_NETWORK_SERVICE);
+    mHandler.removeMessages(MSG_START_NETWORK_SERVICE);
+
+    mHandler.sendEmptyMessage(MSG_STOP_NETWORK_SERVICE);
+  }
 
   private boolean isWiFiActive() {
     ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -728,6 +742,9 @@ public class KodiApp extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
+
+    sMe = this;
+    StreamingInterface.init(sMe);
 
     mVersionName = getVersion();
     Log.d(TAG, "mVersionName = " + mVersionName);
@@ -850,6 +867,7 @@ public class KodiApp extends Application {
   {
     Log.d(TAG, "onPlayStateChanged, mVersionName = " + mVersionName +
         " getCurrentPlayState = " + _getCurrentPlayState());
+    StreamingInterface.getInstance().onPlayStateChanged();
   }
 
   public void onPlayInfoChanged()
@@ -862,14 +880,16 @@ public class KodiApp extends Application {
     {
       Log.d(TAG, "coverBytes: length = " + coverBytes.length);
     }
+    StreamingInterface.getInstance().onPlayInfoChanged();
   }
 
-  private native void _startXbmc();
-  private native void _startNetworkService();
-  private native void _stopNetworkService();
-  private native byte[] _getCurrentCoverArt();
-  private native int _getCurrentPlayState();
-  private native String _getCurrentArtist();
-  private native String _getCurrentTitle();
-
+  public native void _startXbmc();
+  public native void _startNetworkService();
+  public native void _stopNetworkService();
+  public native byte[] _getCurrentCoverArt();
+  public native int _getCurrentPlayState();
+  public native String _getCurrentArtist();
+  public native String _getCurrentTitle();
+  public native long _getTotalTime();
+  public native long _getPlayTime();
 }

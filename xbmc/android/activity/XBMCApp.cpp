@@ -599,6 +599,7 @@ void CXBMCApp::OnPlayBackPaused()
 void CXBMCApp::OnPlayBackResumed()
 {
   m_xbmcappinstance->m_playState = 1;
+  onPlayStateChanged();
   AcquireAudioFocus();
 }
 
