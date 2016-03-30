@@ -113,6 +113,7 @@ CXBMCApp::CXBMCApp(ANativeActivity* nativeActivity)
   : CJNIMainActivity(nativeActivity)
   , CJNIBroadcastReceiver("org/xbmc/kodi/XBMCBroadcastReceiver")
 {
+  android_printf("Create CXBMCApp, Version: %s\n", CCompileInfo::GetSCMID());
   m_xbmcappinstance = this;
   m_activity = nativeActivity;
   m_firstrun = true;
@@ -891,6 +892,8 @@ void CXBMCApp::onVolumeChanged(int volume)
 
 void CXBMCApp::onPlayStateChanged()
 {
+  android_printf("onPlayStateChanged, %s\n", CCompileInfo::GetSCMID());
+
   onPlayStateChangedContext();
 }
 
